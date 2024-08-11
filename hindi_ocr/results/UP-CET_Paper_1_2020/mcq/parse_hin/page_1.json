@@ -1,0 +1,54 @@
+[
+    {
+        "language": "hindi",
+        "category_en": null,
+        "category_original_lang": null,
+        "level": null,
+        "region_related": null,
+        "source": "UP-CET_Paper_1_2020",
+        "page_num": "1",
+        "response": "<question> ओ.एम.आर, उत्तर पत्रिका में गोलों तथा सभी प्रविष्टियों को भरने के लिए किस प्रकार के पेन का उपयोग करना चाहिए? </question>\n<choices>\n1. नीले या काले बाल प्वाइंट पेन\n2. लाल पेन\n3. पेंसिल\n4. मार्कर\n</choices>\n<answer> 1 </answer>\n\n<question> प्रत्येक प्रश्न कितने अंकों का है? </question>\n<choices>\n1. दो\n2. तीन\n3. चार\n4. पाँच\n</choices>\n<answer> 3 </answer>\n\n<question> परीक्षा कक्ष छोड़ने की अनुमति कब दी जायेगी? </question>\n<choices>\n1. परीक्षा अवधि की समाप्ति पर\n2. आधे समय के बाद\n3. किसी भी समय\n4. पहले घंटे के बाद\n</choices>\n<answer> 1 </answer>\n\n<question> प्रश्न-पुस्तिका के किस अंश को सही व अंतिम माना जायेगा? </question>\n<choices>\n1. हिंदी अंश\n2. अंग्रेजी अंश\n3. दोनों अंश\n4. कोई भी नहीं\n</choices>\n<answer> 2 </answer>",
+        "question": " ओ.एम.आर, उत्तर पत्रिका में गोलों तथा सभी प्रविष्टियों को भरने के लिए किस प्रकार के पेन का उपयोग करना चाहिए? ",
+        "options": "\n1. नीले या काले बाल प्वाइंट पेन\n2. लाल पेन\n3. पेंसिल\n4. मार्कर\n",
+        "answer": null
+    },
+    {
+        "language": "hindi",
+        "category_en": null,
+        "category_original_lang": null,
+        "level": null,
+        "region_related": null,
+        "source": "UP-CET_Paper_1_2020",
+        "page_num": "1",
+        "response": "<question> ओ.एम.आर, उत्तर पत्रिका में गोलों तथा सभी प्रविष्टियों को भरने के लिए किस प्रकार के पेन का उपयोग करना चाहिए? </question>\n<choices>\n1. नीले या काले बाल प्वाइंट पेन\n2. लाल पेन\n3. पेंसिल\n4. मार्कर\n</choices>\n<answer> 1 </answer>\n\n<question> प्रत्येक प्रश्न कितने अंकों का है? </question>\n<choices>\n1. दो\n2. तीन\n3. चार\n4. पाँच\n</choices>\n<answer> 3 </answer>\n\n<question> परीक्षा कक्ष छोड़ने की अनुमति कब दी जायेगी? </question>\n<choices>\n1. परीक्षा अवधि की समाप्ति पर\n2. आधे समय के बाद\n3. किसी भी समय\n4. पहले घंटे के बाद\n</choices>\n<answer> 1 </answer>\n\n<question> प्रश्न-पुस्तिका के किस अंश को सही व अंतिम माना जायेगा? </question>\n<choices>\n1. हिंदी अंश\n2. अंग्रेजी अंश\n3. दोनों अंश\n4. कोई भी नहीं\n</choices>\n<answer> 2 </answer>",
+        "question": " प्रत्येक प्रश्न कितने अंकों का है? ",
+        "options": "\n1. दो\n2. तीन\n3. चार\n4. पाँच\n",
+        "answer": null
+    },
+    {
+        "language": "hindi",
+        "category_en": null,
+        "category_original_lang": null,
+        "level": null,
+        "region_related": null,
+        "source": "UP-CET_Paper_1_2020",
+        "page_num": "1",
+        "response": "<question> ओ.एम.आर, उत्तर पत्रिका में गोलों तथा सभी प्रविष्टियों को भरने के लिए किस प्रकार के पेन का उपयोग करना चाहिए? </question>\n<choices>\n1. नीले या काले बाल प्वाइंट पेन\n2. लाल पेन\n3. पेंसिल\n4. मार्कर\n</choices>\n<answer> 1 </answer>\n\n<question> प्रत्येक प्रश्न कितने अंकों का है? </question>\n<choices>\n1. दो\n2. तीन\n3. चार\n4. पाँच\n</choices>\n<answer> 3 </answer>\n\n<question> परीक्षा कक्ष छोड़ने की अनुमति कब दी जायेगी? </question>\n<choices>\n1. परीक्षा अवधि की समाप्ति पर\n2. आधे समय के बाद\n3. किसी भी समय\n4. पहले घंटे के बाद\n</choices>\n<answer> 1 </answer>\n\n<question> प्रश्न-पुस्तिका के किस अंश को सही व अंतिम माना जायेगा? </question>\n<choices>\n1. हिंदी अंश\n2. अंग्रेजी अंश\n3. दोनों अंश\n4. कोई भी नहीं\n</choices>\n<answer> 2 </answer>",
+        "question": " परीक्षा कक्ष छोड़ने की अनुमति कब दी जायेगी? ",
+        "options": "\n1. परीक्षा अवधि की समाप्ति पर\n2. आधे समय के बाद\n3. किसी भी समय\n4. पहले घंटे के बाद\n",
+        "answer": null
+    },
+    {
+        "language": "hindi",
+        "category_en": null,
+        "category_original_lang": null,
+        "level": null,
+        "region_related": null,
+        "source": "UP-CET_Paper_1_2020",
+        "page_num": "1",
+        "response": "<question> ओ.एम.आर, उत्तर पत्रिका में गोलों तथा सभी प्रविष्टियों को भरने के लिए किस प्रकार के पेन का उपयोग करना चाहिए? </question>\n<choices>\n1. नीले या काले बाल प्वाइंट पेन\n2. लाल पेन\n3. पेंसिल\n4. मार्कर\n</choices>\n<answer> 1 </answer>\n\n<question> प्रत्येक प्रश्न कितने अंकों का है? </question>\n<choices>\n1. दो\n2. तीन\n3. चार\n4. पाँच\n</choices>\n<answer> 3 </answer>\n\n<question> परीक्षा कक्ष छोड़ने की अनुमति कब दी जायेगी? </question>\n<choices>\n1. परीक्षा अवधि की समाप्ति पर\n2. आधे समय के बाद\n3. किसी भी समय\n4. पहले घंटे के बाद\n</choices>\n<answer> 1 </answer>\n\n<question> प्रश्न-पुस्तिका के किस अंश को सही व अंतिम माना जायेगा? </question>\n<choices>\n1. हिंदी अंश\n2. अंग्रेजी अंश\n3. दोनों अंश\n4. कोई भी नहीं\n</choices>\n<answer> 2 </answer>",
+        "question": " प्रश्न-पुस्तिका के किस अंश को सही व अंतिम माना जायेगा? ",
+        "options": "\n1. हिंदी अंश\n2. अंग्रेजी अंश\n3. दोनों अंश\n4. कोई भी नहीं\n",
+        "answer": null
+    }
+]
