@@ -1,0 +1,28 @@
+[
+    {
+        "language": "hindi",
+        "category_en": null,
+        "category_original_lang": null,
+        "level": null,
+        "region_related": null,
+        "source": "UP-CET_Paper_1_2020",
+        "page_num": "2",
+        "response": "<question> निम्नांकित में किस व्यंजक का विमीय सूत्र दूसरों से भिन्न है? </question>\n<choices>\n<choice> (a) d^2 का </choice>\n<choice> (b) E = mc^2 </choice>\n<choice> (c) r = R_e R_i / (R_e + R_i) </choice>\n<choice> (d) k = 2πf </choice>\n</choices>\n<answer> b </answer>\n\n<question> एक वस्तु का त्वरण (a) उसके वेग (v) के पदों में है जहाँ » एक स्थिरांक है। यदि v = u + at है, तो समय (t) के पदों में वेग </question>\n<choices>\n<choice> (a) t^2 </choice>\n<choice> (b) t </choice>\n<choice> (c) 1/t^2 </choice>\n<choice> (d) 1/t </choice>\n</choices>\n<answer> c </answer>",
+        "question": " निम्नांकित में किस व्यंजक का विमीय सूत्र दूसरों से भिन्न है? ",
+        "options": "\n<choice> (a) d^2 का </choice>\n<choice> (b) E = mc^2 </choice>\n<choice> (c) r = R_e R_i / (R_e + R_i) </choice>\n<choice> (d) k = 2πf </choice>\n",
+        "answer": null
+    },
+    {
+        "language": "hindi",
+        "category_en": null,
+        "category_original_lang": null,
+        "level": null,
+        "region_related": null,
+        "source": "UP-CET_Paper_1_2020",
+        "page_num": "2",
+        "response": "<question> निम्नांकित में किस व्यंजक का विमीय सूत्र दूसरों से भिन्न है? </question>\n<choices>\n<choice> (a) d^2 का </choice>\n<choice> (b) E = mc^2 </choice>\n<choice> (c) r = R_e R_i / (R_e + R_i) </choice>\n<choice> (d) k = 2πf </choice>\n</choices>\n<answer> b </answer>\n\n<question> एक वस्तु का त्वरण (a) उसके वेग (v) के पदों में है जहाँ » एक स्थिरांक है। यदि v = u + at है, तो समय (t) के पदों में वेग </question>\n<choices>\n<choice> (a) t^2 </choice>\n<choice> (b) t </choice>\n<choice> (c) 1/t^2 </choice>\n<choice> (d) 1/t </choice>\n</choices>\n<answer> c </answer>",
+        "question": " एक वस्तु का त्वरण (a) उसके वेग (v) के पदों में है जहाँ » एक स्थिरांक है। यदि v = u + at है, तो समय (t) के पदों में वेग ",
+        "options": "\n<choice> (a) t^2 </choice>\n<choice> (b) t </choice>\n<choice> (c) 1/t^2 </choice>\n<choice> (d) 1/t </choice>\n",
+        "answer": null
+    }
+]
