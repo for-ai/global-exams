@@ -19,9 +19,8 @@ from openai import (
 )
 from pdf2image import convert_from_path
 
-pre_prompt = """Below provided is an answer key. Extract the answer option of each of the questions and provide the response as a json with the key representing the question and its value the multiple choice option. Do not provide anything else.
 
-{}
+pre_prompt = """Please extract the answer key from the attached image below. Extract the answer option of each of the questions and provide the response as a json with the key representing the question and its value the multiple choice option. Do not provide anything else.
 """
 
 def chat_completion_cohere(
@@ -48,6 +47,12 @@ def chat_completion_cohere(
             time.sleep(20)
     return output
 
+def encode_image(image_path):
+    """
+    Function to encode the image
+    """
+    with open(image_path, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode("utf-8")
 
 def chat_completion_openai(
     client, messages, model, return_text=True, return_usage=True, model_args=None
@@ -95,32 +100,41 @@ def chat_completion_openai(
             continue
 
 
-def main(txt_path, api_key, api_type="openai"):
+def main(pdf_path, api_key):
     """
     It performs the main text extraction pipeline of the script.
 
     :param dir_path: str
     :param openai_key: str
     """
+    client = OpenAI(api_key=api_key)
+    
+    pdf_name = os.path.splitext(os.path.basename(pdf_path))[0]
 
-    if "cohere" in api_type:
-        client = CohereClient(api_key=api_key)
-    else:
-        client = OpenAI(api_key=api_key)
-    f = open(txt_path, "r")
-    answer_txt = f.read()
-    print(answer_txt)
+    # Define paths for 'imgs' and 'results' folders
+    parent_directory = os.path.dirname(os.path.dirname(pdf_path))
+    imgs_folder = os.path.join(parent_directory, "imgs", pdf_name)
+    result_path = os.path.join(parent_directory, "answer_key")
+    # Create directories if they don't exist
+    os.makedirs(imgs_folder, exist_ok=True)
+    os.makedirs(result_path, exist_ok=True)
+    images = convert_from_path(pdf_path, first_page=1)
 
-    txt_path_parts = os.path.normpath(txt_path).split(os.sep)
-    txt_file_name = "_".join(txt_path_parts)
-    txt_file_name = os.path.splitext(txt_file_name)[0]
+    # Step 2: Preprocess the image (deskew)
+    for page_num, image in enumerate(images):
+        print("Page: {} / {}".format(page_num + 1, len(images)))
+        image_path = os.path.join(imgs_folder, f"page_{page_num+1}.png")
+        image.save(image_path, "PNG")
+        base64_image = encode_image(image_path)
 
-    answer_key_folder = os.path.join("answer_keys", api_type)
-    os.makedirs(answer_key_folder, exist_ok=True)
-
-    try:
-        if "openai" in api_type:
-            message = [{"type": "text", "text": pre_prompt.format(answer_txt)}]
+        try:
+            message = [
+                {"type": "text", "text": pre_prompt},
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"},
+                },
+            ]
             response, _ = chat_completion_openai(
                 client,
                 [{"role": "user", "content": message}],
@@ -135,45 +149,31 @@ def main(txt_path, api_key, api_type="openai"):
                     "presence_penalty": 0,
                 },
             )
-        else:
-            message = [pre_prompt.format(answer_txt)]
-            response = chat_completion_cohere(
-                client,
-                message[0],
-                temperature=0.0,
-                max_tokens=4096
-            )
-
-    except openai.BadRequestError:
-        pass
-    # store extracted questions
-    response = (
-        response.replace("```", "")
-        .replace("json", "")
-        .replace(" ", "")
-        .replace("\n", "")
-    )
-    try:
-        response = json.loads(response)
-    except Exception as e:
-        raise ValueError(e)
-    output_file = os.path.join(answer_key_folder, txt_file_name + ".json")
-
-    # Save the results to a JSON file
-    with open(output_file, "w", encoding="utf-8") as json_file:
-        json.dump(response, json_file, indent=4, ensure_ascii=False)
-
-    print("Data saved: {}".format(output_file))
+        except openai.BadRequestError:
+            pass
+        # store extracted questions
+        response = (
+            response.replace("```", "")
+            .replace("json", "")
+            .replace(" ", "")
+            .replace("\n", "")
+        )
+        try:
+            response = json.loads(response)
+        except Exception as e:
+            raise ValueError(e)
+        output_file = os.path.join(result_path, pdf_name + f"_page_{page_num}.json")
+        # Save the results to a JSON file
+        with open(output_file, "w", encoding="utf-8") as json_file:
+            json.dump(response, json_file, indent=4, ensure_ascii=False)
+        print("Data saved: {}".format(output_file))
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        "txt_path", type=str, help="Path to the txt file from tesseract."
-    )
-    parser.add_argument(
-        "--api_type", type=str, help="openai or cohere.", default="openai"
+        "--pdf_path", type=str, help="Path to the txt file from tesseract."
     )
     parser.add_argument(
         "-k",
@@ -182,4 +182,4 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-    main(txt_path=args.txt_path, api_key=args.key, api_type=args.api_type)
+    main(pdf_path=args.pdf_path, api_key=args.key)

@@ -20,25 +20,51 @@ from pdf2image import convert_from_path
 # from utils import parse_gpt_output
 
 
-pre_prompt = """Please extract the multiple-choice questions in the attached image in the {} language in which they appear. The question should be inside the tags  <question> </question> and the choices inside the tags <choices> </choices>. Additionally, the correct answer might be present in the image either explicitly provided or by a mark next to the correct answer of the multiple choices. Provide the number or letter of the correct answer between the tags <answer> </answer>. If no answer is present, leave empty.
+pre_prompt = """Please extract the multiple-choice questions in the attached image in the {} language in which they appear. There can be one or multiple questions per page. The question number should be inside the <question_num></question_num> tags, the question should be inside the tags  <question> </question> and the choices inside the tags <choices> </choices>. Also, determine the category of question from the following - physics, chemistry, maths, biology, reasoning, numerical ability, scientific aptitude, general knowledge, english language, drawing aptitude, computer concepts and pharmacy. Like if it belongs to chemistry output <category>chemistry</category> if english language output <category>english language</category>. If the question requires some image or a figure to arrive at an answer respond with <image>yes</image> else respond with <image>no</image>. If a particular question requires referring to a passage, respond with <context>yes</context> else respond  with <context>no</context>. Additionally, the correct answer might be present in the image either explicitly provided or by a mark next to the correct answer of the multiple choices. Provide the number or letter of the correct answer between the tags <answer> </answer>. If no answer is present, leave empty.
 The output format should be the following, depending on the number of choices present:
 <question> </question>
 <choices>
 </choices>
 <answer> </answer>
+<image></image>
+<context></context>
+<category></category>
 """
 
 
-def parse_gpt_output(response):
+def parse_gpt_output(response, pdf_path):
     question_pattern = re.compile(r"<question>(.*?)</question>", re.DOTALL)
     choices_pattern = re.compile(r"<choices>(.*?)</choices>", re.DOTALL)
     answer_pattern = re.compile(r"<answer>(.*?)</answer>", re.DOTALL)
+    requires_image_pattern = re.compile(r"<image>(.*?)</image>", re.DOTALL)
+    category_pattern = re.compile(r"<category>(.*?)</category>", re.DOTALL)
+    context_pattern = re.compile(r"<context>(.*?)</context>", re.DOTALL)
+    question_num = re.compile(r"<question_num>(.*?)</question_num>", re.DOTALL)
 
     # Find all matches for questions
     question_matches = question_pattern.findall(response)
     choices_matches = choices_pattern.findall(response)
-    # answer_matches = answer_pattern.findall(response)
-    return question_matches, choices_matches
+    requires_image = requires_image_pattern.findall(response)
+    contexts = context_pattern.findall(response)
+    categories = category_pattern.findall(response)
+    q_nums = question_num.findall(response)
+    
+
+    if "UP-CET" in pdf_path:
+        option_pattern = r"\n\(([A-Z])\) ([^\n]+)"
+        final_matches = [] 
+        for choice_match in choices_matches:
+            options = re.findall(option_pattern, choice_match)
+            final_matches.append([option[1] for option in options])
+    else:
+        option_pattern = r"\n\(\d+\) ([^\n]+)"
+        final_matches = [] 
+        for choice_match in choices_matches:
+            options = re.findall(option_pattern, choice_match)
+            final_matches.append(options)
+
+    answer_matches = answer_pattern.findall(response)
+    return question_matches, final_matches, requires_image, categories, contexts, q_nums
 
 
 def chat_completion(
@@ -95,7 +121,7 @@ def encode_image(image_path):
         return base64.b64encode(image_file.read()).decode("utf-8")
 
 
-def main(pdf_path, openai_key, language, pages=1000):
+def main(pdf_path, openai_key, language, page_start=0, page_end=9999, source=""):
     """
     It performs the main text extraction pipeline of the script.
 
@@ -108,18 +134,22 @@ def main(pdf_path, openai_key, language, pages=1000):
     pdf_name = os.path.splitext(os.path.basename(pdf_path))[0]
 
     # Define paths for 'imgs' and 'results' folders
-    imgs_folder = os.path.join("imgs", pdf_name)
-    parsed_folder = os.path.join("results", pdf_name)
+    parent_directory = os.path.dirname(os.path.dirname(pdf_path))
+    imgs_folder = os.path.join(parent_directory, "imgs", pdf_name)
+    result_path = os.path.join(parent_directory, "results")
     # Create directories if they don't exist
     os.makedirs(imgs_folder, exist_ok=True)
-    os.makedirs(parsed_folder, exist_ok=True)
-    images = convert_from_path(pdf_path, first_page=1, last_page=pages)
+    os.makedirs(result_path, exist_ok=True)
+    images = convert_from_path(pdf_path, first_page=1)
+    images = images[page_start: page_end]
+    page_num = page_start + 1
 
     # Step 2: Preprocess the image (deskew)
     results = list()
-    for i, image in enumerate(images):
-        print("Page: {} / {}".format(i, len(images)))
-        image_path = os.path.join(imgs_folder, f"page_{i+1}.png")
+    q_idx = 0
+    for _, image in enumerate(images):
+        print("Page: {} / {}".format(page_num, len(images)))
+        image_path = os.path.join(imgs_folder, f"page_{page_num+1}.png")
         image.save(image_path, "PNG")
         base64_image = encode_image(image_path)
 
@@ -147,57 +177,72 @@ def main(pdf_path, openai_key, language, pages=1000):
                 },
             )
             # Step 4: Process gpt-4 output
-            questions, choices = parse_gpt_output(response)
-            if len(questions) > 0 and len(choices) > 0:
-                for question, options in zip(questions, choices):
+            questions, choices, requires_image, categories, contexts, q_nums = parse_gpt_output(response, pdf_path)
+            page_results = []
+            if not all(len(lst) == len(questions) for lst in [choices, requires_image, categories, contexts, q_nums]):
+                    print("Skipped page", page_num)
+            else:
+                for question, options, has_image, category, cntx, q_num in zip(questions, choices, requires_image, categories, contexts, q_nums):
                     new_row = {
                         "language": language,
-                        "category_en": None,
+                        "country": "India",
+                        "file_name": pdf_name,
+                        "source": source,
+                        "license": "", #check
+                        "level": "high school",
+                        "category_en": category,
                         "category_original_lang": None,
-                        "level": None,
-                        "region_related": None,
-                        "source": pdf_name,
-                        "page_num": i,
+                        "region_related": False,
+                        "original_question_idx": q_num,
+                        "page_num": page_num,
                         "response": response,
                         "question": question,
                         "options": options,
-                        "answer": None,
+                        "answer": "",
+                        "requires_image": has_image,
+                        "context": cntx
                     }
-
-                    results.append(new_row)
-            print("Questions extracted: {}".format(len(results)))
+                    page_results.append(new_row)
+                    q_idx+=1
+            output_file = os.path.join(result_path, pdf_name + f"_page_{page_num}.json")
+            page_num+=1
+            # Save the results to a JSON file
+            with open(output_file, "w", encoding="utf-8") as json_file:
+                json.dump(page_results, json_file, indent=4, ensure_ascii=False)
+            print("Data saved: {}".format(output_file))
 
         except openai.BadRequestError:
             pass
     # store extracted questions
-    output_folder = os.path.join(parsed_folder, "gpt4_o")
-    os.makedirs(output_folder, exist_ok=True)
-    output_file = os.path.join(output_folder, pdf_name + ".json")
-
-    # Save the results to a JSON file
-    with open(output_file, "w", encoding="utf-8") as json_file:
-        json.dump(results, json_file, indent=4, ensure_ascii=False)
-
-    print("Data saved: {}".format(output_file))
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("pdf_path", type=str, help="Path to the PDF file.")
+    parser.add_argument("--pdf_path", type=str, help="Path to the PDF file.")
     parser.add_argument(
         "-l", "--lang", type=str, default="english", help="Language(s) for the PDF"
     )
     parser.add_argument(
-        "--pages",
+        "--source", type=str, default="", help="Link to PDF"
+    )
+    parser.add_argument(
+        "--page_start",
         type=int,
-        default=1000,
-        help="Maximum number of pages to process (default: 1000).",
+        default=0,
+        help="Start page.",
+    )
+    parser.add_argument(
+        "--page_end",
+        type=int,
+        default=9999,
+        help="End page.",
     )
     parser.add_argument(
         "-k",
         "--key",
         help="OpenAI API Key",
+        default="",
     )
 
     args = parser.parse_args()
@@ -205,5 +250,9 @@ if __name__ == "__main__":
         pdf_path=args.pdf_path,
         openai_key=args.key,
         language=args.lang,
-        pages=args.pages,
+        # pages=args.pages,
+        page_start=args.page_start,
+        page_end=args.page_end,
+        source=args.source
     )
+

@@ -213,6 +213,7 @@ if __name__ == "__main__":
         "-k",
         "--key",
         help="OpenAI API Key or Cohere Key",
+        default="",
     )
 
     args = parser.parse_args()
