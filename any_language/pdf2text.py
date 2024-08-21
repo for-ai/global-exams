@@ -19,7 +19,7 @@ def deskew(image):
     gray = cv2.bitwise_not(gray)
     coords = np.column_stack(np.where(gray > 0))
     angle = cv2.minAreaRect(coords)[-1]
-    
+
     if angle < -45:
         angle = -(90 + angle)
     else:
@@ -28,7 +28,9 @@ def deskew(image):
     (h, w) = image.shape[:2]
     center = (w // 2, h // 2)
     M = cv2.getRotationMatrix2D(center, angle, 1.0)
-    rotated = cv2.warpAffine(image, M, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
+    rotated = cv2.warpAffine(
+        image, M, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE
+    )
 
     return rotated
 
@@ -50,8 +52,8 @@ def main(dir_path):
     onlyfiles = [f for f in listdir(dir_path) if isfile(join(dir_path, f))]
     for f in onlyfiles:
         # Step 1: Reads the pdf file
-        print('Parsing file: {}'.format(f))
-        pdf_file = '{}/{}'.format(dir_path, f)
+        print("Parsing file: {}".format(f))
+        pdf_file = "{}/{}".format(dir_path, f)
         pages = convert_from_path(pdf_file)
 
         # Create a list to store extracted text from all pages
@@ -63,22 +65,20 @@ def main(dir_path):
 
             # Step 3: Extract text using OCR
             text = extract_text_from_image(preprocessed_image)
-            extracted_text.append({'page_num': i, 'parsed_text': text})
-        
+            extracted_text.append({"page_num": i, "parsed_text": text})
+
         # save file
         data = pd.DataFrame(extracted_text)
-        output_file = '{}.csv'.format(f.split('.')[0])
-        data.to_csv(os.path.join(dir_path, 'parsed', output_file), index=False)
-        print('Data saved: {}'.format(output_file))
-        print('-'*40)
+        output_file = "{}.csv".format(f.split(".")[0])
+        data.to_csv(os.path.join(dir_path, "parsed", output_file), index=False)
+        print("Data saved: {}".format(output_file))
+        print("-" * 40)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-d', '--dir',
-                        help='',
-                        default='pfds')
-    
+    parser.add_argument("-d", "--dir", help="", default="pfds")
+
     args = parser.parse_args()
     main(dir_path=args.dir)

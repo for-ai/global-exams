@@ -48,17 +48,16 @@ def parse_gpt_output(response, pdf_path):
     contexts = context_pattern.findall(response)
     categories = category_pattern.findall(response)
     q_nums = question_num.findall(response)
-    
 
     if "UP-CET" in pdf_path:
         option_pattern = r"\n\(([A-Z])\) ([^\n]+)"
-        final_matches = [] 
+        final_matches = []
         for choice_match in choices_matches:
             options = re.findall(option_pattern, choice_match)
             final_matches.append([option[1] for option in options])
     else:
         option_pattern = r"\n\(\d+\) ([^\n]+)"
-        final_matches = [] 
+        final_matches = []
         for choice_match in choices_matches:
             options = re.findall(option_pattern, choice_match)
             final_matches.append(options)
@@ -141,7 +140,7 @@ def main(pdf_path, openai_key, language, page_start=0, page_end=9999, source="")
     os.makedirs(imgs_folder, exist_ok=True)
     os.makedirs(result_path, exist_ok=True)
     images = convert_from_path(pdf_path, first_page=1)
-    images = images[page_start: page_end]
+    images = images[page_start:page_end]
     page_num = page_start + 1
 
     # Step 2: Preprocess the image (deskew)
@@ -177,18 +176,30 @@ def main(pdf_path, openai_key, language, page_start=0, page_end=9999, source="")
                 },
             )
             # Step 4: Process gpt-4 output
-            questions, choices, requires_image, categories, contexts, q_nums = parse_gpt_output(response, pdf_path)
+            (
+                questions,
+                choices,
+                requires_image,
+                categories,
+                contexts,
+                q_nums,
+            ) = parse_gpt_output(response, pdf_path)
             page_results = []
-            if not all(len(lst) == len(questions) for lst in [choices, requires_image, categories, contexts, q_nums]):
-                    print("Skipped page", page_num)
+            if not all(
+                len(lst) == len(questions)
+                for lst in [choices, requires_image, categories, contexts, q_nums]
+            ):
+                print("Skipped page", page_num)
             else:
-                for question, options, has_image, category, cntx, q_num in zip(questions, choices, requires_image, categories, contexts, q_nums):
+                for question, options, has_image, category, cntx, q_num in zip(
+                    questions, choices, requires_image, categories, contexts, q_nums
+                ):
                     new_row = {
                         "language": language,
                         "country": "India",
                         "file_name": pdf_name,
                         "source": source,
-                        "license": "", #check
+                        "license": "",  # check
                         "level": "high school",
                         "category_en": category,
                         "category_original_lang": None,
@@ -200,12 +211,12 @@ def main(pdf_path, openai_key, language, page_start=0, page_end=9999, source="")
                         "options": options,
                         "answer": "",
                         "requires_image": has_image,
-                        "context": cntx
+                        "context": cntx,
                     }
                     page_results.append(new_row)
-                    q_idx+=1
+                    q_idx += 1
             output_file = os.path.join(result_path, pdf_name + f"_page_{page_num}.json")
-            page_num+=1
+            page_num += 1
             # Save the results to a JSON file
             with open(output_file, "w", encoding="utf-8") as json_file:
                 json.dump(page_results, json_file, indent=4, ensure_ascii=False)
@@ -223,9 +234,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-l", "--lang", type=str, default="english", help="Language(s) for the PDF"
     )
-    parser.add_argument(
-        "--source", type=str, default="", help="Link to PDF"
-    )
+    parser.add_argument("--source", type=str, default="", help="Link to PDF")
     parser.add_argument(
         "--page_start",
         type=int,
@@ -253,6 +262,5 @@ if __name__ == "__main__":
         # pages=args.pages,
         page_start=args.page_start,
         page_end=args.page_end,
-        source=args.source
+        source=args.source,
     )
-

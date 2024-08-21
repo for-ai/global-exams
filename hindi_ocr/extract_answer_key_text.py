@@ -23,6 +23,7 @@ from pdf2image import convert_from_path
 pre_prompt = """Please extract the answer key from the attached image below. Extract the answer option of each of the questions and provide the response as a json with the key representing the question and its value the multiple choice option. Do not provide anything else.
 """
 
+
 def chat_completion_cohere(
     client,
     messages,
@@ -47,12 +48,14 @@ def chat_completion_cohere(
             time.sleep(20)
     return output
 
+
 def encode_image(image_path):
     """
     Function to encode the image
     """
     with open(image_path, "rb") as image_file:
         return base64.b64encode(image_file.read()).decode("utf-8")
+
 
 def chat_completion_openai(
     client, messages, model, return_text=True, return_usage=True, model_args=None
@@ -108,7 +111,7 @@ def main(pdf_path, api_key):
     :param openai_key: str
     """
     client = OpenAI(api_key=api_key)
-    
+
     pdf_name = os.path.splitext(os.path.basename(pdf_path))[0]
 
     # Define paths for 'imgs' and 'results' folders

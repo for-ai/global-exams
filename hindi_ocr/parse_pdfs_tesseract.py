@@ -5,9 +5,7 @@ from pdf2image import convert_from_path
 
 
 def pdf_to_images_and_ocr(pdf_path, lang="eng", pages=1000):
-
     pdf_name = os.path.splitext(os.path.basename(pdf_path))[0]
-
 
     imgs_folder = os.path.join("imgs", pdf_name)
     parsed_folder = os.path.join("results", pdf_name, f"parse_{lang}")

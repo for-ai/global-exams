@@ -13,7 +13,7 @@ categories = {
     "english language": "अंग्रेजी भाषा",
     "drawing aptitude": "चित्रकला अभिरुचि",
     "computer concepts": "कंप्यूटर अवधारणाएँ",
-    "pharmacy": "फार्मेसी"
+    "pharmacy": "फार्मेसी",
 }
 # Define the paths to the folders
 results_folder = "<path_to_folder>"
@@ -32,7 +32,7 @@ final_questions = []
 questions = []
 for file_path in json_files:
     # Construct the corresponding answer key file name
-    with open(file_path, 'r') as f:
+    with open(file_path, "r") as f:
         paper_json = json.load(f)
     if len(paper_json) > 0:
         questions = questions + paper_json
@@ -63,7 +63,7 @@ for question in questions:
     final_questions.append(question)
     # Write the updated JSON back to the file
 print(len(final_questions))
-with open("output.json", 'w') as f:
+with open("output.json", "w") as f:
     json.dump(final_questions, f, indent=4)
 
 print("Answer mapping completed.")

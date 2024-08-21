@@ -65,6 +65,7 @@ def chat_completion_cohere(
             time.sleep(20)
     return output
 
+
 def chat_completion_openai(
     client, messages, model, return_text=True, return_usage=True, model_args=None
 ):
@@ -130,7 +131,9 @@ def main(txt_path, api_key, lang="Hindi", api_type="openai"):
     path_parts = txt_path.split(os.sep)
 
     # Construct the new path
-    new_directory = os.path.join("results_cohere", path_parts[-3], "mcq", path_parts[-2])
+    new_directory = os.path.join(
+        "results_cohere", path_parts[-3], "mcq", path_parts[-2]
+    )
     json_file_path = os.path.join(new_directory, path_parts[-1])
     json_file_path = json_file_path.replace(".txt", ".json")
 
@@ -156,10 +159,7 @@ def main(txt_path, api_key, lang="Hindi", api_type="openai"):
         else:
             message = [pre_prompt.format(lang, answer_txt)]
             response = chat_completion_cohere(
-                client,
-                message[0],
-                temperature=0.0,
-                max_tokens=4096
+                client, message[0], temperature=0.0, max_tokens=4096
             )
         # Step 4: Process gpt-4 output
 
@@ -217,4 +217,6 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-    main(txt_path=args.txt_path, api_key=args.key, lang=args.lang, api_type=args.api_type)
+    main(
+        txt_path=args.txt_path, api_key=args.key, lang=args.lang, api_type=args.api_type
+    )
