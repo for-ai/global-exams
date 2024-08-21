@@ -51,7 +51,9 @@ for question in questions:
         continue
     if question["context"] == "yes":
         continue
-    question["category_original_lang"] = categories[question["category_en"].lower()]
+    question["category_original_lang"] = categories[
+        question["category_en"].lower()
+    ]
     question["license"] = "unknown"
     question["original_question_num"] = str(question["original_question_idx"])
     del question["original_question_idx"]

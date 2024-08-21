@@ -67,7 +67,12 @@ def chat_completion_cohere(
 
 
 def chat_completion_openai(
-    client, messages, model, return_text=True, return_usage=True, model_args=None
+    client,
+    messages,
+    model,
+    return_text=True,
+    return_usage=True,
+    model_args=None,
 ):
     """
     Calls openai API with the image and the prompt
@@ -141,7 +146,9 @@ def main(txt_path, api_key, lang="Hindi", api_type="openai"):
 
     try:
         if "openai" in api_type:
-            message = [{"type": "text", "text": pre_prompt.format(lang, answer_txt)}]
+            message = [
+                {"type": "text", "text": pre_prompt.format(lang, answer_txt)}
+            ]
             response, _ = chat_completion_openai(
                 client,
                 [{"role": "user", "content": message}],
@@ -218,5 +225,8 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     main(
-        txt_path=args.txt_path, api_key=args.key, lang=args.lang, api_type=args.api_type
+        txt_path=args.txt_path,
+        api_key=args.key,
+        lang=args.lang,
+        api_type=args.api_type,
     )

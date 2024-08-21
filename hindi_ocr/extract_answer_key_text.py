@@ -58,7 +58,12 @@ def encode_image(image_path):
 
 
 def chat_completion_openai(
-    client, messages, model, return_text=True, return_usage=True, model_args=None
+    client,
+    messages,
+    model,
+    return_text=True,
+    return_usage=True,
+    model_args=None,
 ):
     """
     Calls openai API with the image and the prompt
@@ -135,7 +140,9 @@ def main(pdf_path, api_key):
                 {"type": "text", "text": pre_prompt},
                 {
                     "type": "image_url",
-                    "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"},
+                    "image_url": {
+                        "url": f"data:image/jpeg;base64,{base64_image}"
+                    },
                 },
             ]
             response, _ = chat_completion_openai(
@@ -165,7 +172,9 @@ def main(pdf_path, api_key):
             response = json.loads(response)
         except Exception as e:
             raise ValueError(e)
-        output_file = os.path.join(result_path, pdf_name + f"_page_{page_num}.json")
+        output_file = os.path.join(
+            result_path, pdf_name + f"_page_{page_num}.json"
+        )
         # Save the results to a JSON file
         with open(output_file, "w", encoding="utf-8") as json_file:
             json.dump(response, json_file, indent=4, ensure_ascii=False)

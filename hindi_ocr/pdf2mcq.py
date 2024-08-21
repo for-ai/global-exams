@@ -63,11 +63,23 @@ def parse_gpt_output(response, pdf_path):
             final_matches.append(options)
 
     answer_matches = answer_pattern.findall(response)
-    return question_matches, final_matches, requires_image, categories, contexts, q_nums
+    return (
+        question_matches,
+        final_matches,
+        requires_image,
+        categories,
+        contexts,
+        q_nums,
+    )
 
 
 def chat_completion(
-    client, messages, model, return_text=True, return_usage=True, model_args=None
+    client,
+    messages,
+    model,
+    return_text=True,
+    return_usage=True,
+    model_args=None,
 ):
     """
     Calls openai API with the image and the prompt
@@ -120,7 +132,9 @@ def encode_image(image_path):
         return base64.b64encode(image_file.read()).decode("utf-8")
 
 
-def main(pdf_path, openai_key, language, page_start=0, page_end=9999, source=""):
+def main(
+    pdf_path, openai_key, language, page_start=0, page_end=9999, source=""
+):
     """
     It performs the main text extraction pipeline of the script.
 
@@ -158,7 +172,9 @@ def main(pdf_path, openai_key, language, page_start=0, page_end=9999, source="")
                 {"type": "text", "text": pre_prompt.format(language)},
                 {
                     "type": "image_url",
-                    "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"},
+                    "image_url": {
+                        "url": f"data:image/jpeg;base64,{base64_image}"
+                    },
                 },
             ]
             response, _ = chat_completion(
@@ -187,12 +203,23 @@ def main(pdf_path, openai_key, language, page_start=0, page_end=9999, source="")
             page_results = []
             if not all(
                 len(lst) == len(questions)
-                for lst in [choices, requires_image, categories, contexts, q_nums]
+                for lst in [
+                    choices,
+                    requires_image,
+                    categories,
+                    contexts,
+                    q_nums,
+                ]
             ):
                 print("Skipped page", page_num)
             else:
                 for question, options, has_image, category, cntx, q_num in zip(
-                    questions, choices, requires_image, categories, contexts, q_nums
+                    questions,
+                    choices,
+                    requires_image,
+                    categories,
+                    contexts,
+                    q_nums,
                 ):
                     new_row = {
                         "language": language,
@@ -215,7 +242,9 @@ def main(pdf_path, openai_key, language, page_start=0, page_end=9999, source="")
                     }
                     page_results.append(new_row)
                     q_idx += 1
-            output_file = os.path.join(result_path, pdf_name + f"_page_{page_num}.json")
+            output_file = os.path.join(
+                result_path, pdf_name + f"_page_{page_num}.json"
+            )
             page_num += 1
             # Save the results to a JSON file
             with open(output_file, "w", encoding="utf-8") as json_file:
@@ -232,7 +261,11 @@ if __name__ == "__main__":
 
     parser.add_argument("--pdf_path", type=str, help="Path to the PDF file.")
     parser.add_argument(
-        "-l", "--lang", type=str, default="english", help="Language(s) for the PDF"
+        "-l",
+        "--lang",
+        type=str,
+        default="english",
+        help="Language(s) for the PDF",
     )
     parser.add_argument("--source", type=str, default="", help="Link to PDF")
     parser.add_argument(

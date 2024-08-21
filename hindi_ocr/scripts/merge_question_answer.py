@@ -23,8 +23,12 @@ answer_map_jee = ["1", "2", "3", "4", "5", "6"]
 
 def jee_main(results_folder, answer_keys_folder):
     # Get a list of all JSON files in the results folder
-    result_files = [f for f in os.listdir(results_folder) if f.endswith(".json")]
-    answer_files = [f for f in os.listdir(answer_keys_folder) if f.endswith(".json")]
+    result_files = [
+        f for f in os.listdir(results_folder) if f.endswith(".json")
+    ]
+    answer_files = [
+        f for f in os.listdir(answer_keys_folder) if f.endswith(".json")
+    ]
     answer_key = {}
     # if "2015" in answer_keys_folder or "2013" in answer_keys_folder or "2014" in answer_keys_folder:
     for file_name in answer_files:
@@ -88,7 +92,9 @@ def jee_main(results_folder, answer_keys_folder):
         if "english language" in question["category_en"]:
             print(question["category_en"])
             continue
-        question["category_original_lang"] = categories[question["category_en"].lower()]
+        question["category_original_lang"] = categories[
+            question["category_en"].lower()
+        ]
         question["license"] = "unknown"
         question["original_question_num"] = question["original_question_idx"]
         question["language"] = "hi"
@@ -106,7 +112,9 @@ def jee_main(results_folder, answer_keys_folder):
 
 def main(results_folder, answer_keys_folder):
     # Get a list of all JSON files in the results folder
-    result_files = [f for f in os.listdir(results_folder) if f.endswith(".json")]
+    result_files = [
+        f for f in os.listdir(results_folder) if f.endswith(".json")
+    ]
 
     # Group result files by paper number
     papers = {}
@@ -152,7 +160,10 @@ def main(results_folder, answer_keys_folder):
                     except Exception as e:
                         try:
                             question["answer"] = str(
-                                answer_map.index(answer_key[question_idx].upper()) + 1
+                                answer_map.index(
+                                    answer_key[question_idx].upper()
+                                )
+                                + 1
                             )
                         except Exception as e:
                             raise ValueError(e)
@@ -176,7 +187,9 @@ def main(results_folder, answer_keys_folder):
                     question["category_en"].lower()
                 ]
                 question["license"] = "unknown"
-                question["original_question_num"] = question["original_question_idx"]
+                question["original_question_num"] = question[
+                    "original_question_idx"
+                ]
                 question["language"] = "hi"
                 del question["region_related"]
                 del question["original_question_idx"]
