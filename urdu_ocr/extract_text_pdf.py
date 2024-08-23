@@ -20,8 +20,25 @@ from openai import (
 from pdf2image import convert_from_path
 
 
-pre_prompt = """Please extract the answer key from the attached image below. Extract the answer option of each of the questions and provide the response as a json with the key representing the question and its value the multiple choice option. Do not provide anything else.
-"""
+# pre_prompt = """Please extract the answer key from the attached image below. Extract the answer option of each of the questions and provide the response as a json with the key representing the question and its value the multiple choice option. Do not provide anything else.
+# """
+
+pre_prompt = """You are extracting text from a long PDF page by page. You are given the current page of the PDF as image and the extracted text (by you) of the previous page as context. Please extract the text in the attached image. The image consists of multiple choice questions. The same question is in English and Urdu with the multiple choice options in English and Urdu as well. The multiple choice options for a question always begin after "options:" and always start with 1. , 2. , 3. or 4. . The statements after A), B), C) or D) are NOT choices but part of the question only. The question and options are spread across pages. There are 4 options per questions, but for some questions all options might not be present on the same page and might be on the next page. Use the context of the previous page to see if the provided image has the remaining options. Extract the question and options in English and Urdu exactly as in the image in the following format.
+ 
+The question number should be inside the <question_num></question_num> tags, the question should be inside the tags  <question> </question> and the choices inside the tags <choices> </choices>. Also, determine the category of question from the following - physics, chemistry, maths, biology, agriculture, reasoning, pharmacy and medical. Like if it belongs to chemistry output <category>chemistry</category> if english language output <category>english language</category>. If the question requires some image or a figure to arrive at an answer respond with <image>yes</image> else respond with <image>no</image>. If a particular question requires referring to a passage, respond with <context>yes</context> else respond  with <context>no</context>. Additionally, the correct answer (indicated by a green tick in image) is present in the image. Provide the number or letter of the correct answer between the tags <answer> </answer>.
+The output format should be the following, depending on the number of choices present:
+
+<question> </question>
+<choices>
+</choices>
+<answer> </answer>
+<image></image>
+<context></context>
+<category></category>
+
+
+Previous Page Context: {}
+# """
 
 
 def chat_completion_cohere(
@@ -103,8 +120,8 @@ def chat_completion_openai(
             RateLimitError,
             InternalServerError,
         ) as e:
-            print(f"OpenAI error: {str(e)}. Waiting for 1 minute.")
-            time.sleep(60)
+            print(f"OpenAI error: {str(e)}. Waiting for 30 secs.")
+            time.sleep(30)
             continue
 
 
@@ -122,14 +139,17 @@ def main(pdf_path, api_key):
     # Define paths for 'imgs' and 'results' folders
     parent_directory = os.path.dirname(os.path.dirname(pdf_path))
     imgs_folder = os.path.join(parent_directory, "imgs", pdf_name)
-    result_path = os.path.join(parent_directory, "answer_key")
+    result_path = os.path.join(parent_directory, "results")
     # Create directories if they don't exist
     os.makedirs(imgs_folder, exist_ok=True)
     os.makedirs(result_path, exist_ok=True)
     images = convert_from_path(pdf_path, first_page=1)
 
     # Step 2: Preprocess the image (deskew)
+    prev_response = "As this is the first page so no context is there."
     for page_num, image in enumerate(images):
+        # if page_num >= 10:
+        #     break
         print("Page: {} / {}".format(page_num + 1, len(images)))
         image_path = os.path.join(imgs_folder, f"page_{page_num+1}.png")
         image.save(image_path, "PNG")
@@ -137,7 +157,7 @@ def main(pdf_path, api_key):
 
         try:
             message = [
-                {"type": "text", "text": pre_prompt},
+                {"type": "text", "text": pre_prompt.format(prev_response)},
                 {
                     "type": "image_url",
                     "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"},
@@ -160,21 +180,14 @@ def main(pdf_path, api_key):
         except openai.BadRequestError:
             pass
         # store extracted questions
-        response = (
-            response.replace("```", "")
-            .replace("json", "")
-            .replace(" ", "")
-            .replace("\n", "")
-        )
-        try:
-            response = json.loads(response)
-        except Exception as e:
-            raise ValueError(e)
-        output_file = os.path.join(result_path, pdf_name + f"_page_{page_num}.json")
+
+        output_file = os.path.join(result_path, pdf_name + ".txt")
+        print(output_file)
         # Save the results to a JSON file
-        with open(output_file, "w", encoding="utf-8") as json_file:
-            json.dump(response, json_file, indent=4, ensure_ascii=False)
-        print("Data saved: {}".format(output_file))
+        write_file = open(output_file, "a", encoding="utf-8")
+        write_file.write(response + "\n\n")
+        prev_response = response
+        # print("Data saved: {}".format(output_file))
 
 
 if __name__ == "__main__":
@@ -187,6 +200,7 @@ if __name__ == "__main__":
         "-k",
         "--key",
         help="OpenAI API Key or Cohere Key",
+        default="",
     )
 
     args = parser.parse_args()

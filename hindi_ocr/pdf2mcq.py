@@ -132,9 +132,7 @@ def encode_image(image_path):
         return base64.b64encode(image_file.read()).decode("utf-8")
 
 
-def main(
-    pdf_path, openai_key, language, page_start=0, page_end=9999, source=""
-):
+def main(pdf_path, openai_key, language, page_start=0, page_end=9999, source=""):
     """
     It performs the main text extraction pipeline of the script.
 
@@ -172,9 +170,7 @@ def main(
                 {"type": "text", "text": pre_prompt.format(language)},
                 {
                     "type": "image_url",
-                    "image_url": {
-                        "url": f"data:image/jpeg;base64,{base64_image}"
-                    },
+                    "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"},
                 },
             ]
             response, _ = chat_completion(
@@ -242,9 +238,7 @@ def main(
                     }
                     page_results.append(new_row)
                     q_idx += 1
-            output_file = os.path.join(
-                result_path, pdf_name + f"_page_{page_num}.json"
-            )
+            output_file = os.path.join(result_path, pdf_name + f"_page_{page_num}.json")
             page_num += 1
             # Save the results to a JSON file
             with open(output_file, "w", encoding="utf-8") as json_file:

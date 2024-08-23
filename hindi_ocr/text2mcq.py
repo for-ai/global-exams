@@ -146,9 +146,7 @@ def main(txt_path, api_key, lang="Hindi", api_type="openai"):
 
     try:
         if "openai" in api_type:
-            message = [
-                {"type": "text", "text": pre_prompt.format(lang, answer_txt)}
-            ]
+            message = [{"type": "text", "text": pre_prompt.format(lang, answer_txt)}]
             response, _ = chat_completion_openai(
                 client,
                 [{"role": "user", "content": message}],
