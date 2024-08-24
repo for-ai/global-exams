@@ -1,4 +1,13 @@
-### Cohere For AI Community, Sree Harsha Nelaturu, 2024
+### Cohere For AI Community, Sree Harsha Nelaturu, 2024 (+ ChatGPT^TM)
+
+"""
+This script ideally should check for any issues with schema, to ensure all the fields needed are present -- (basically like the doc said)
+- Should ensure options are 4 only (and not more)
+- This script will also remove questions + options combos that are exactly the same word-for-word (some might slip through the crack due to semantic changes, but what can ya do)
+- Should also break if answer ain't an int (this can change if not required, lmk)
+- purge_error_entries removes duplicates, removes the error'd entries and saves a new JSON -- if you don't provide it, then you gotta fix stuff manually and then re-run
+- If you have suggestions/want to to improve this, send me a message on discord.
+"""
 
 import json
 from prettytable import PrettyTable, ALL
@@ -148,7 +157,7 @@ class JSONEvaluator:
             if self.purge_error_entries:
                 self.remove_problematic_entries(errors)
             else:
-                raise ValueError("Validation failed.")
+                raise ValueError("Validation failed due to problematic answers in entries.")
         return True
 
     def display_errors_pretty(self, errors):
@@ -192,18 +201,20 @@ class JSONEvaluator:
             self.display_duplicates_pretty(duplicates)
             if self.purge_error_entries:
                 self.remove_problematic_entries(duplicates)
-            self.save_cleaned_data()
-            self.revalidate_cleaned_data()
+            return len(duplicates)
+        
+        return 0
+
 
 
     def display_duplicates_pretty(self, duplicates):
         """Displays duplicate questions side by side in a formatted table using PrettyTable."""
         table = PrettyTable()
         table.hrules = ALL
-        table.align = "l"
+        #table.align = "l"
         table.max_width = 50
-        table.field_names = ["Original Entry", "Duplicate Entry", "Original Question", "Duplicate Question"]
-        table._max_width = {"Original Entry" : 100, "Duplicate Entry" : 50, "Original Question" : 50, "Duplicate Question" : 50}
+        table.field_names = ["Original Entry", "Duplicate Entry", "Original Question", "Duplicate Question", "Original Options", "Duplicate Options"]
+        table._max_width = {"Original Entry" : 100, "Duplicate Entry" : 50, "Original Question" : 50, "Duplicate Question" : 50, "Original Options" : 50, "Duplicate Options" : 50}
 
         for duplicate in duplicates:
             original_idx = duplicate["duplicate_with_entry"]
@@ -212,7 +223,10 @@ class JSONEvaluator:
             original_question = self.json_data[original_idx]["question"].strip()
             duplicate_question = self.json_data[duplicate_idx]["question"].strip()
 
-            table.add_row([original_idx, duplicate_idx, original_question, duplicate_question])
+            original_options = self.json_data[original_idx]["options"]
+            duplicate_options = self.json_data[duplicate_idx]["options"]
+
+            table.add_row([original_idx, duplicate_idx, original_question, duplicate_question, original_options, duplicate_options])
 
         print(table)
 
@@ -240,22 +254,25 @@ class JSONEvaluator:
         """Re-validates cleaned JSON data to ensure no remaining errors."""
         print('Re-validating cleaned JSON data...')
         
-        self.json_file = self.output_file 
+        self.json_file = self.output_file  
         self.json_data = []
         self.errors = []
-
         self.load_json_file()
         
         self.clean_whitespace()
         self.validate_schema()
         self.validate_options()
         self.validate_answer()
+
+        duplicates_count = self.check_for_duplicates()
         
-        if not self.errors:
-            print("Re-validation of cleaned data passed successfully.")
-        else:
+        if self.errors or duplicates_count > 0:
             self.display_errors_pretty(self.errors)
+            if duplicates_count > 0:
+                print(f"Re-validation failed. {duplicates_count} duplicate entries found in the cleaned data.")
             print("Re-validation failed. Errors found in the cleaned data.")
+        else:
+            print("Re-validation of cleaned data passed successfully.")
 
     def clean_whitespace(self):
         """Cleans up trailing whitespaces in all string fields."""
@@ -271,15 +288,26 @@ class JSONEvaluator:
         """Runs all checks on the JSON data."""
         self.load_json_file()
         self.clean_whitespace()
-        self.validate_schema()
-        self.validate_options()
-        self.validate_answer()
-        self.check_for_duplicates()
 
-        if not self.purge_error_entries:
+        try:
+            self.validate_schema()
+            self.validate_options()
+            self.validate_answer()
+            dups = self.check_for_duplicates()
+
+            if dups > 0:
+                if self.purge_error_entries:
+                    print(f"Found {dups} duplicate entries. They will be removed.")
+                    self.save_cleaned_data()
+                else:
+                    raise ValueError(f"Found {dups} duplicate entries. Validation failed.")
+
             print("All checks passed successfully.")
-        else:
-            self.save_cleaned_data()
+
+        except ValueError as e:
+            print(f"Validation failed: {e}")
+            if not self.purge_error_entries:
+                raise
 
 
 if __name__ == "__main__":
@@ -292,9 +320,6 @@ if __name__ == "__main__":
     print(f"JSON file: {args.json_file}")
     print(f"Should entries with errors simply be purged?: {args.purge_error_entries}")
 
-    try:
-        evaluator = JSONEvaluator(json_file=args.json_file, purge_error_entries=args.purge_error_entries)
-        evaluator.run_all_checks()
-    except Exception as e:
-        print(f"Check failed: {e}")
+    evaluator = JSONEvaluator(json_file=args.json_file, purge_error_entries=args.purge_error_entries)
+    evaluator.run_all_checks()
 
