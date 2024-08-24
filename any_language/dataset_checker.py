@@ -83,7 +83,7 @@ class JSONEvaluator:
             if self.purge_error_entries:
                 self.remove_problematic_entries(errors)
             else:
-                raise ValueError("Validation failed.")
+                raise ValueError("Validation issues in schema.")
         return True
 
     def validate_options(self):
@@ -125,7 +125,7 @@ class JSONEvaluator:
             if self.purge_error_entries:
                 self.remove_problematic_entries(errors)
             else:
-                raise ValueError("Validation failed.")
+                raise ValueError("Validation issues in options.")
         return True
 
     def validate_answer(self):
@@ -322,4 +322,3 @@ if __name__ == "__main__":
 
     evaluator = JSONEvaluator(json_file=args.json_file, purge_error_entries=args.purge_error_entries)
     evaluator.run_all_checks()
-
