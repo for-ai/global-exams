@@ -312,7 +312,7 @@ class JSONEvaluator:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='JSON Evaluator')
-    parser.add_argument('--json_file', type=str, help='Path to the JSON file to evaluate')
+    parser.add_argument('--json_file', type=str, help='Path to the JSON file to evaluate', required=True)
     parser.add_argument('--purge_error_entries', action='store_true', help='Remove entries with errors')
     args = parser.parse_args()
 
