@@ -1,4 +1,4 @@
-### Cohere For AI, Harsha 2024
+### Cohere For AI Community, Sree Harsha Nelaturu, 2024
 
 import json
 from prettytable import PrettyTable, ALL
@@ -12,6 +12,7 @@ class JSONEvaluator:
         self.json_file = json_file
         self.json_data = []
         self.purge_error_entries = purge_error_entries
+        self.output_file = None
         self.schema = {
             "language": str,
             "country": str,
@@ -167,8 +168,8 @@ class JSONEvaluator:
         print(table)
 
     def check_for_duplicates(self):
-        """Removes duplicate question and options sets, ignoring leading/trailing whitespace."""
-        seen_questions = set()
+        """Identifies and optionally removes duplicate question and options sets, ignoring leading/trailing whitespace."""
+        seen_questions = {}
         duplicates = []
 
         for idx, entry in enumerate(self.json_data):
@@ -177,16 +178,44 @@ class JSONEvaluator:
             question_combination = (question, options)
 
             if question_combination in seen_questions:
-                duplicates.append({"entry": idx, "message": "Duplicate entry."})
+                original_idx = seen_questions[question_combination]
+                duplicates.append({
+                    "entry": idx,
+                    "duplicate_with_entry": original_idx,
+                    "message": "Duplicate entry.",
+                    "question": question
+                })
             else:
-                seen_questions.add(question_combination)
+                seen_questions[question_combination] = idx
 
         if duplicates:
-            self.display_errors_pretty(duplicates)
+            self.display_duplicates_pretty(duplicates)
             if self.purge_error_entries:
                 self.remove_problematic_entries(duplicates)
             self.save_cleaned_data()
             self.revalidate_cleaned_data()
+
+
+    def display_duplicates_pretty(self, duplicates):
+        """Displays duplicate questions side by side in a formatted table using PrettyTable."""
+        table = PrettyTable()
+        table.hrules = ALL
+        table.align = "l"
+        table.max_width = 50
+        table.field_names = ["Original Entry", "Duplicate Entry", "Original Question", "Duplicate Question"]
+        table._max_width = {"Original Entry" : 100, "Duplicate Entry" : 50, "Original Question" : 50, "Duplicate Question" : 50}
+
+        for duplicate in duplicates:
+            original_idx = duplicate["duplicate_with_entry"]
+            duplicate_idx = duplicate["entry"]
+
+            original_question = self.json_data[original_idx]["question"].strip()
+            duplicate_question = self.json_data[duplicate_idx]["question"].strip()
+
+            table.add_row([original_idx, duplicate_idx, original_question, duplicate_question])
+
+        print(table)
+
 
     def remove_problematic_entries(self, errors):
         """Removes problematic entries based on errors identified."""
@@ -198,12 +227,12 @@ class JSONEvaluator:
         
         base_filename = os.path.basename(self.json_file).split('.')[0]
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_file = f"cleaned_{base_filename}_{timestamp}.json"
+        self.output_file = f"cleaned_{base_filename}_{timestamp}.json"
 
-        with open(output_file, 'w', encoding='utf-8') as outfile:
+        with open(self.output_file, 'w', encoding='utf-8') as outfile:
             json.dump(self.json_data, outfile, ensure_ascii=False, indent=4)
         
-        print(f"Cleaned data saved to {output_file}")
+        print(f"Cleaned data saved to {self.output_file}")
 
         self.revalidate_cleaned_data()
 
@@ -258,6 +287,10 @@ if __name__ == "__main__":
     parser.add_argument('--json_file', type=str, help='Path to the JSON file to evaluate')
     parser.add_argument('--purge_error_entries', action='store_true', help='Remove entries with errors')
     args = parser.parse_args()
+
+    print("Starting Evaluation!")
+    print(f"JSON file: {args.json_file}")
+    print(f"Should entries with errors simply be purged?: {args.purge_error_entries}")
 
     try:
         evaluator = JSONEvaluator(json_file=args.json_file, purge_error_entries=args.purge_error_entries)
