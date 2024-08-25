@@ -16,6 +16,10 @@ import json
 from datetime import datetime
 import argparse
 
+from rich.console import Console
+from rich.table import Table
+from rich import box
+
 class JSONEvaluator:
     def __init__(self, json_file=None, purge_error_entries=False):
         self.json_file = json_file
@@ -36,6 +40,7 @@ class JSONEvaluator:
             "options": list,
             "answer": int,
         }
+        self.console = Console()
 
     def load_json_file(self):
         """Loads JSON data from the file."""
@@ -83,7 +88,7 @@ class JSONEvaluator:
             if self.purge_error_entries:
                 self.remove_problematic_entries(errors)
             else:
-                raise ValueError("Validation issues in schema.")
+                print("Validation issues in schema.")
         return True
 
     def validate_options(self):
@@ -125,7 +130,7 @@ class JSONEvaluator:
             if self.purge_error_entries:
                 self.remove_problematic_entries(errors)
             else:
-                raise ValueError("Validation issues in options.")
+                print("There are still validation issues in options.")
         return True
 
     def validate_answer(self):
@@ -157,24 +162,38 @@ class JSONEvaluator:
             if self.purge_error_entries:
                 self.remove_problematic_entries(errors)
             else:
-                raise ValueError("Validation failed due to problematic answers in entries.")
+                print("There are still validation issues due to problematic answers in entries.")
         return True
 
     def display_errors_pretty(self, errors):
-        """Displays errors in a formatted table using PrettyTable."""
-        table = PrettyTable()
-        table.hrules = ALL
-        table.field_names = ["Entry", "Error Message", "Question", "Options", "Answer"]
-        table._max_width = {"Entry" : 100, "Question" : 50, "Error Message" : 50, "Options" : 50, "Answer" : 10}
-        table.align["Question"] = "l"
-        table.align["Error Message"] = "l"
+        """Displays errors in a formatted table using Rich's Table with consistent borders and wrapped text."""
+        table = Table(
+            title="[bold magenta]Validation Errors[/bold magenta]", 
+            box=box.HEAVY_EDGE,
+            header_style="bold white on blue",
+            show_lines=True
+        )
+        
+        table.add_column("Entry", justify="center", style="bold bright_cyan", max_width=8, overflow="fold")
+        table.add_column("Error Message", justify="left", style="bold bright_red", max_width=30, overflow="fold")
+        table.add_column("Question", justify="left", style="bold bright_green", max_width=40, overflow="fold")
+        table.add_column("Options", justify="left", style="bright_yellow", max_width=30, overflow="fold")
+        table.add_column("Answer", justify="center", style="bold bright_blue", max_width=8, overflow="fold")
+        
         for error in errors:
-            question_text = self.json_data[error["entry"]].get("question", "N/A")
-            options = self.json_data[error["entry"]].get("options", [])
-            answer = self.json_data[error["entry"]].get("answer", "N/A")
-            table.add_row([error["entry"], error["message"], question_text, options, answer])
-
-        print(table)
+            question_text = self.json_data[error["entry"]].get("question", "[N/A]")
+            options = "\n".join(self.json_data[error["entry"]].get("options", [])) 
+            answer = self.json_data[error["entry"]].get("answer", "[N/A]")
+            
+            table.add_row(
+                f"[bold bright_cyan]{error['entry']}[/bold bright_cyan]",
+                f"[bold bright_red]{error['message']}[/bold bright_red]",
+                f"[bright_green]{question_text}[/bright_green]",
+                f"[bright_yellow]{options}[/bright_yellow]",
+                f"[bold bright_blue]{answer}[/bold bright_blue]"
+            )
+        
+        self.console.print(table)
 
     def check_for_duplicates(self):
         """Identifies and optionally removes duplicate question and options sets, ignoring leading/trailing whitespace."""
@@ -205,30 +224,43 @@ class JSONEvaluator:
         
         return 0
 
-
-
     def display_duplicates_pretty(self, duplicates):
-        """Displays duplicate questions side by side in a formatted table using PrettyTable."""
-        table = PrettyTable()
-        table.hrules = ALL
-        #table.align = "l"
-        table.max_width = 50
-        table.field_names = ["Original Entry", "Duplicate Entry", "Original Question", "Duplicate Question", "Original Options", "Duplicate Options"]
-        table._max_width = {"Original Entry" : 100, "Duplicate Entry" : 50, "Original Question" : 50, "Duplicate Question" : 50, "Original Options" : 50, "Duplicate Options" : 50}
-
+        """Displays duplicate questions side by side in a formatted table using Rich's Table with consistent borders and wrapped text."""
+        table = Table(
+            title="[bold blue]Duplicate Entries[/bold blue]", 
+            box=box.HEAVY_EDGE,
+            header_style="bold white on purple",
+            show_lines=True
+        )
+        
+        table.add_column("Original Entry", justify="center", style="bold bright_cyan", max_width=10, overflow="fold")
+        table.add_column("Duplicate Entry", justify="center", style="bold bright_cyan", max_width=10, overflow="fold")
+        table.add_column("Original Question", justify="left", style="bright_green", max_width=40, overflow="fold")
+        table.add_column("Duplicate Question", justify="left", style="bright_green", max_width=40, overflow="fold")
+        table.add_column("Original Options", justify="left", style="bright_magenta", max_width=30, overflow="fold")
+        table.add_column("Duplicate Options", justify="left", style="bright_magenta", max_width=30, overflow="fold")
+        
         for duplicate in duplicates:
             original_idx = duplicate["duplicate_with_entry"]
             duplicate_idx = duplicate["entry"]
-
+            
             original_question = self.json_data[original_idx]["question"].strip()
             duplicate_question = self.json_data[duplicate_idx]["question"].strip()
+            
+            original_options = "\n".join(self.json_data[original_idx]["options"]) 
+            duplicate_options = "\n".join(self.json_data[duplicate_idx]["options"])
+            
 
-            original_options = self.json_data[original_idx]["options"]
-            duplicate_options = self.json_data[duplicate_idx]["options"]
-
-            table.add_row([original_idx, duplicate_idx, original_question, duplicate_question, original_options, duplicate_options])
-
-        print(table)
+            table.add_row(
+                f"[bold bright_cyan]{original_idx}[/bold bright_cyan]",
+                f"[bold bright_cyan]{duplicate_idx}[/bold bright_cyan]",
+                f"[bright_green]{original_question}[/bright_green]",
+                f"[bright_green]{duplicate_question}[/bright_green]",
+                f"[bright_magenta]{original_options}[/bright_magenta]",
+                f"[bright_magenta]{duplicate_options}[/bright_magenta]"
+            )
+        
+        self.console.print(table)
 
 
     def remove_problematic_entries(self, errors):
@@ -245,14 +277,15 @@ class JSONEvaluator:
 
         with open(self.output_file, 'w', encoding='utf-8') as outfile:
             json.dump(self.json_data, outfile, ensure_ascii=False, indent=4)
-        
-        print(f"Cleaned data saved to {self.output_file}")
-
+        print('==' * 50)
+        print(f"Step Three: Cleaned data saved to {self.output_file}")
+        print('==' * 50)
         self.revalidate_cleaned_data()
 
     def revalidate_cleaned_data(self):
         """Re-validates cleaned JSON data to ensure no remaining errors."""
-        print('Re-validating cleaned JSON data...')
+        print('Step Four: Re-validating cleaned JSON data...')
+        print('==' * 50)
         
         self.json_file = self.output_file  
         self.json_data = []
@@ -270,10 +303,14 @@ class JSONEvaluator:
             self.display_errors_pretty(self.errors)
             if duplicates_count > 0:
                 print(f"Re-validation failed. {duplicates_count} duplicate entries found in the cleaned data.")
+            print('==' * 50)
             print("Re-validation failed. Errors found in the cleaned data.")
-        else:
-            print("Re-validation of cleaned data passed successfully.")
+            print('==' * 50)
 
+        else:
+            print('==' * 50)
+            print("The re-validation of cleaned data passed successfully. New JSON should ideally be error-free")
+            print('==' * 50)
     def clean_whitespace(self):
         """Cleans up trailing whitespaces in all string fields."""
         for entry in self.json_data:
@@ -295,15 +332,15 @@ class JSONEvaluator:
             self.validate_answer()
             dups = self.check_for_duplicates()
 
-            if dups > 0:
-                if self.purge_error_entries:
-                    print(f"Found {dups} duplicate entries. They will be removed.")
-                    self.save_cleaned_data()
-                else:
-                    raise ValueError(f"Found {dups} duplicate entries. Validation failed.")
-
-            print("All checks passed successfully.")
-
+            if dups > 0 and not self.purge_error_entries:
+                print(f"Found {dups} duplicate entries. They will NOT be removed.")
+            elif dups > 0 and self.purge_error_entries:
+                print('==' * 50)
+                print('Step One: Entries with Errors will be purged.')
+                print('==' * 50)
+                print(f"Step Two: Found {dups} duplicate entries. Removing them.")
+                self.save_cleaned_data()
+                
         except ValueError as e:
             print(f"Validation failed: {e}")
             if not self.purge_error_entries:
