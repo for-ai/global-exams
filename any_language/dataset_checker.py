@@ -18,7 +18,10 @@ import argparse
 
 from rich.console import Console
 from rich.table import Table
+from rich.panel import Panel
 from rich import box
+from rich.text import Text
+from rich.rule import Rule
 
 class JSONEvaluator:
     def __init__(self, json_file=None, purge_error_entries=False):
@@ -44,9 +47,9 @@ class JSONEvaluator:
 
     def load_json_file(self):
         """Loads JSON data from the file."""
-        print(f"Loading JSON file: {self.json_file}")
+        self.console.print(f"[cyan]Loading JSON file:[/cyan] {self.json_file}")
         if not self.json_file:
-            print("No file path provided.")
+            self.console.print("[red]No file path provided.[/red]")
             return False
 
         try:
@@ -88,7 +91,7 @@ class JSONEvaluator:
             if self.purge_error_entries:
                 self.remove_problematic_entries(errors)
             else:
-                print("Validation issues in schema.")
+                pself.console.print("[bold bright_red]Validation issues in schema.[/bold bright_red]")
         return True
 
     def validate_options(self):
@@ -130,7 +133,7 @@ class JSONEvaluator:
             if self.purge_error_entries:
                 self.remove_problematic_entries(errors)
             else:
-                print("There are still validation issues in options.")
+                self.console.print("[bold bright_red]There are still validation issues in options.[/bold bright_red]")
         return True
 
     def validate_answer(self):
@@ -162,7 +165,7 @@ class JSONEvaluator:
             if self.purge_error_entries:
                 self.remove_problematic_entries(errors)
             else:
-                print("There are still validation issues due to problematic answers in entries.")
+                self.console.print("[bold bright_red]There are still validation issues due to problematic answers in entries.[/bold bright_red]")
         return True
 
     def display_errors_pretty(self, errors):
@@ -270,23 +273,19 @@ class JSONEvaluator:
 
     def save_cleaned_data(self):
         """Saves the cleaned JSON data to a new file with a timestamp to avoid overwriting."""
-        
         base_filename = os.path.basename(self.json_file).split('.')[0]
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.output_file = f"cleaned_{base_filename}_{timestamp}.json"
 
         with open(self.output_file, 'w', encoding='utf-8') as outfile:
             json.dump(self.json_data, outfile, ensure_ascii=False, indent=4)
-        print('==' * 50)
-        print(f"Step Three: Cleaned data saved to {self.output_file}")
-        print('==' * 50)
+        self.console.print(Panel(f"Step Three: Cleaned data saved to [green]{self.output_file}[/green]", style="bold green"))
         self.revalidate_cleaned_data()
 
     def revalidate_cleaned_data(self):
         """Re-validates cleaned JSON data to ensure no remaining errors."""
-        print('Step Four: Re-validating cleaned JSON data...')
-        print('==' * 50)
-        
+        self.console.print(Panel("Step Four: Re-validating cleaned JSON data...", style="bold cyan"))
+
         self.json_file = self.output_file  
         self.json_data = []
         self.errors = []
@@ -302,15 +301,11 @@ class JSONEvaluator:
         if self.errors or duplicates_count > 0:
             self.display_errors_pretty(self.errors)
             if duplicates_count > 0:
-                print(f"Re-validation failed. {duplicates_count} duplicate entries found in the cleaned data.")
-            print('==' * 50)
-            print("Re-validation failed. Errors found in the cleaned data.")
-            print('==' * 50)
-
+                self.console.print(f"[bold red]Re-validation failed. {duplicates_count} duplicate entries found in the cleaned data.[/bold red]")
+            self.console.print(Panel("Re-validation failed. Errors found in the cleaned data.", style="bold red"))
         else:
-            print('==' * 50)
-            print("The re-validation of cleaned data passed successfully. New JSON should ideally be error-free")
-            print('==' * 50)
+            self.console.print(Panel("The re-validation of cleaned data passed successfully. New JSON should ideally be error-free", style="bold green"))
+
     def clean_whitespace(self):
         """Cleans up trailing whitespaces in all string fields."""
         for entry in self.json_data:
@@ -333,19 +328,20 @@ class JSONEvaluator:
             dups = self.check_for_duplicates()
 
             if not self.purge_error_entries:
-                print(f"Found {dups} duplicate entries. They will NOT be removed.")
+                self.console.print(Panel(f"Found {dups} duplicate entries. They will NOT be removed.", style="bold yellow"))
             else:
-                print('==' * 50)
-                print('Step One: Entries with Errors will be purged.')
-                print('==' * 50)
-                print(f"Step Two: Found {dups} duplicate entries. Removing them.")
+                self.console.print(Rule(title="JSON Evaluation Steps"))
+                self.console.print(Panel("Step One: Entries with Errors will be purged.", style="bold magenta"))
+                if dups > 0:
+                    self.console.print(Panel(f"Step Two: Found {dups} duplicate entries. Removing them.", style="bold magenta"))
+                else:
+                    self.console.print(Panel("Step Two: No duplicate entries found. Moving on...", style="bold magenta"))
                 self.save_cleaned_data()
-                
+
         except ValueError as e:
-            print(f"Validation failed: {e}")
+            self.console.print(Panel(f"Validation failed: {e}", style="bold red"))
             if not self.purge_error_entries:
                 raise
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='JSON Evaluator')
@@ -353,9 +349,10 @@ if __name__ == "__main__":
     parser.add_argument('--purge_error_entries', action='store_true', help='Remove entries with errors')
     args = parser.parse_args()
 
-    print("Starting Evaluation!")
-    print(f"JSON file: {args.json_file}")
-    print(f"Should entries with errors simply be purged?: {args.purge_error_entries}")
+    console = Console()
+    console.print(Rule(title="Starting Evaluation!", style="bold green"))
+    console.print(f"JSON file: [cyan]{args.json_file}[/cyan]")
+    console.print(f"Should entries with errors simply be purged?: [cyan]{args.purge_error_entries}[/cyan]")
 
     evaluator = JSONEvaluator(json_file=args.json_file, purge_error_entries=args.purge_error_entries)
     evaluator.run_all_checks()
