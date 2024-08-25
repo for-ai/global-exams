@@ -61,14 +61,14 @@ class JSONEvaluator:
                 errors.append({"entry": idx, "message": f"Invalid type for '{key}': expected {expected_type.__name__}, got {type(value).__name__}."})
         
         options = entry.get("options", [])
-        if not isinstance(options, list) or len(options) != 4 or any(not opt.strip() for opt in options):
-            errors.append({"entry": idx, "message": "Invalid 'options': must be a list of 4 non-empty strings."})
+        if not isinstance(options, list) or any(not opt.strip() for opt in options):
+            errors.append({"entry": idx, "message": "Invalid 'options': must be a list of non-empty strings."})
         elif len(set(options)) == 1:
             errors.append({"entry": idx, "message": "All options are identical."})
         
         answer = entry.get("answer")
-        if not isinstance(answer, int) or answer < 1 or answer > 4:
-            errors.append({"entry": idx, "message": f"Invalid 'answer': must be an integer between 1 and 4."})
+        if not isinstance(answer, int) or answer < 1 or answer > len(options):
+            errors.append({"entry": idx, "message": f"Invalid 'answer': must be an integer between 1 and {len(options)}."})
         
         return errors
 
@@ -76,6 +76,7 @@ class JSONEvaluator:
         seen_entries = {}
         all_errors = []
         for idx, entry in enumerate(self.json_data):
+            # Create a hashable representation of the entry
             entry_hash = (entry['question'].strip(), tuple(opt.strip() for opt in entry['options']))
             
             # Check for duplicates
@@ -84,6 +85,7 @@ class JSONEvaluator:
             else:
                 seen_entries[entry_hash] = idx
 
+            # Validate the entry regardless of whether it's a duplicate
             all_errors.extend(self.validate_entry(idx, entry))
 
         if all_errors:
