@@ -13,12 +13,9 @@ import json
 import os
 from datetime import datetime
 import argparse
-from rich.console import Console
-from rich.table import Table
-from rich.panel import Panel
-from rich import box
-from rich.rule import Rule
 from typing import Union
+
+from rich.rule import Rule
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
