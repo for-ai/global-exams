@@ -13,6 +13,7 @@ import json
 import os
 from datetime import datetime
 import argparse
+from typing import Union
 
 from rich.rule import Rule
 from rich.console import Console
