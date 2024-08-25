@@ -7,6 +7,11 @@ This script ideally should check for any issues with schema, to ensure all the f
 - Should also break if answer ain't an int (this can change if not required, lmk)
 - purge_error_entries removes duplicates, removes the error'd entries and saves a new JSON -- if you don't provide it, then you gotta fix stuff manually and then re-run
 - If you have suggestions/want to to improve this, send me a message on discord.
+
+Dependencies
+------------
+pip install rich
+pip install prettytable
 """
 
 import json
