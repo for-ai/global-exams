@@ -13,7 +13,6 @@ import json
 import os
 from datetime import datetime
 import argparse
-from typing import Union
 
 from rich.rule import Rule
 from rich.console import Console
@@ -61,14 +60,14 @@ class JSONEvaluator:
                 errors.append({"entry": idx, "message": f"Invalid type for '{key}': expected {expected_type.__name__}, got {type(value).__name__}."})
         
         options = entry.get("options", [])
-        if not isinstance(options, list) or any(not opt.strip() for opt in options):
-            errors.append({"entry": idx, "message": "Invalid 'options': must be a list of non-empty strings."})
+        if not isinstance(options, list) or len(options) != 4 or any(not opt.strip() for opt in options):
+            errors.append({"entry": idx, "message": "Invalid 'options': must be a list of 4 non-empty strings."})
         elif len(set(options)) == 1:
             errors.append({"entry": idx, "message": "All options are identical."})
         
         answer = entry.get("answer")
-        if not isinstance(answer, int) or answer < 1 or answer > len(options):
-            errors.append({"entry": idx, "message": f"Invalid 'answer': must be an integer between 1 and {len(options)}."})
+        if not isinstance(answer, int) or answer < 1 or answer > 4:
+            errors.append({"entry": idx, "message": f"Invalid 'answer': must be an integer between 1 and 4."})
         
         return errors
 
