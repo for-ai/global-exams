@@ -91,7 +91,7 @@ class JSONEvaluator:
             if self.purge_error_entries:
                 self.remove_problematic_entries(errors)
             else:
-                pself.console.print("[bold bright_red]Validation issues in schema.[/bold bright_red]")
+                self.console.print("[bold bright_red]Validation issues in schema.[/bold bright_red]")
         return True
 
     def validate_options(self):
@@ -337,6 +337,7 @@ class JSONEvaluator:
                 else:
                     self.console.print(Panel("Step Two: No duplicate entries found. Moving on...", style="bold magenta"))
                 self.save_cleaned_data()
+            self.console.print(Panel("Well, if there were issues found -- they would've showed as tables. This message is a good sign if there are not tables, so um....", style="bold green"))
 
         except ValueError as e:
             self.console.print(Panel(f"Validation failed: {e}", style="bold red"))
