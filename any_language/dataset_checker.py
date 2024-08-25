@@ -332,9 +332,9 @@ class JSONEvaluator:
             self.validate_answer()
             dups = self.check_for_duplicates()
 
-            if dups > 0 and not self.purge_error_entries:
+            if not self.purge_error_entries:
                 print(f"Found {dups} duplicate entries. They will NOT be removed.")
-            elif dups > 0 and self.purge_error_entries:
+            else:
                 print('==' * 50)
                 print('Step One: Entries with Errors will be purged.')
                 print('==' * 50)
