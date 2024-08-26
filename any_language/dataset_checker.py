@@ -14,6 +14,7 @@ import os
 from datetime import datetime
 import argparse
 from typing import Union
+import re
 
 from rich.rule import Rule
 from rich.console import Console
@@ -34,7 +35,7 @@ class JSONEvaluator:
             "language": str, "country": str, "file_name": str, "source": str,
             "license": str, "level": str, "category_en": str,
             "category_original_lang": str, "original_question_num": Union[int, str],
-            "question": str, "options": list, "answer": int,
+            "question": str, "options": list, "answer": str,
         }
         self.console = Console()
 
@@ -51,6 +52,9 @@ class JSONEvaluator:
             self.console.print(f"[red]Error loading file {self.json_file}: {e}[/red]")
             return False
 
+    def is_valid_iso_code(self, code):
+        return bool(re.match(r'^[a-z]{2}$', code, re.IGNORECASE))
+
     def validate_entry(self, idx, entry):
         errors = []
         for key, expected_type in self.schema.items():
@@ -60,15 +64,27 @@ class JSONEvaluator:
             elif not isinstance(value, expected_type):
                 errors.append({"entry": idx, "message": f"Invalid type for '{key}': expected {expected_type.__name__}, got {type(value).__name__}."})
         
+        lang = entry.get('language', '').lower()
+        if lang and not self.is_valid_iso_code(lang):
+            errors.append({"entry": idx, "message": f"Invalid language code: '{lang}'. Must be a valid ISO 639-1 (2-letter)"})
+
         options = entry.get("options", [])
-        if not isinstance(options, list) or len(options) != 4 or any(not opt.strip() for opt in options):
-            errors.append({"entry": idx, "message": "Invalid 'options': must be a list of 4 non-empty strings."})
+        if not isinstance(options, list) or any(not isinstance(opt, str) or not opt.strip() for opt in options):
+            errors.append({"entry": idx, "message": "Invalid 'options': must be a list of non-empty strings."})
         elif len(set(options)) == 1:
             errors.append({"entry": idx, "message": "All options are identical."})
         
-        answer = entry.get("answer")
-        if not isinstance(answer, int) or answer < 1 or answer > 4:
-            errors.append({"entry": idx, "message": f"Invalid 'answer': must be an integer between 1 and 4."})
+        answer = entry.get("answer", "")
+        if not isinstance(answer, str):
+            errors.append({"entry": idx, "message": "Invalid 'answer': must be a string."})
+        else:
+            try:
+                answer_ints = [int(a.strip()) for a in answer.split(',')]
+                valid_range = set(range(1, len(options) + 1))
+                if not set(answer_ints).issubset(valid_range):
+                    errors.append({"entry": idx, "message": f"Invalid 'answer': Answer cannot be more than number of options: {len(options)}."})
+            except ValueError:
+                errors.append({"entry": idx, "message": "Invalid 'answer': must be comma-separated integers."})
         
         return errors
 
@@ -76,16 +92,13 @@ class JSONEvaluator:
         seen_entries = {}
         all_errors = []
         for idx, entry in enumerate(self.json_data):
-            # Create a hashable representation of the entry
             entry_hash = (entry['question'].strip(), tuple(opt.strip() for opt in entry['options']))
             
-            # Check for duplicates
             if entry_hash in seen_entries:
                 all_errors.append({"entry": idx, "message": f"Duplicate of entry {seen_entries[entry_hash]}."})
             else:
                 seen_entries[entry_hash] = idx
 
-            # Validate the entry regardless of whether it's a duplicate
             all_errors.extend(self.validate_entry(idx, entry))
 
         if all_errors:
@@ -117,7 +130,7 @@ class JSONEvaluator:
             answer_node.add(str(entry.get('answer', '[N/A]')))
             
             console.print(Panel(tree, expand=False, border_style="red"))
-            console.print()  # Add a blank line between entries
+            console.print()
 
     def check_for_duplicates(self):
         seen = {}
@@ -158,7 +171,7 @@ class JSONEvaluator:
                     options_node.add(f"{i}. {option}")
             
             console.print(Panel(tree, expand=False, border_style="blue"))
-            console.print()  # Add a blank line between entries
+            console.print()
 
     def remove_problematic_entries(self, errors):
         self.json_data = [entry for idx, entry in enumerate(self.json_data) if idx not in {error['entry'] for error in errors}]
