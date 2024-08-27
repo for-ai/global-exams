@@ -2,7 +2,7 @@
 
 """
 This script ideally should check for any issues with schema, to ensure all the fields needed are present -- (basically like the doc said)
-- Should ensure options are 4 only (and not more)
+- Should ensure options are non-empty and answer is in the range of 1, len(options)
 - This script will also remove questions + options combos that are exactly the same word-for-word (some might slip through the crack due to semantic changes, but what can ya do)
 - Should also break if answer ain't an int (this can change if not required, lmk)
 - purge_error_entries removes duplicates, removes the error'd entries and saves a new JSON -- if you don't provide it, then you gotta fix stuff manually and then re-run
