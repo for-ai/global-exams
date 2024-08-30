@@ -53,7 +53,7 @@ class JSONEvaluator:
             return False
 
     def is_valid_iso_code(self, code):
-        return bool(re.match(r'^[a-z]{2}$', code, re.IGNORECASE))
+        return bool(re.match(r'^[a-z]{2,3}$', code, re.IGNORECASE))
 
     def validate_entry(self, idx, entry):
         errors = []
