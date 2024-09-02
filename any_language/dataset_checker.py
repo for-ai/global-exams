@@ -26,11 +26,12 @@ from rich.text import Text
 from rich.syntax import Syntax
 
 class JSONEvaluator:
-    def __init__(self, json_file=None, purge_error_entries=False):
+    def __init__(self, json_file, language_code, purge_error_entries=False):
         self.json_file = json_file
         self.json_data = []
         self.purge_error_entries = purge_error_entries
         self.output_file = None
+        self.language_code = language_code.lower()
         self.schema = {
             "language": str, "country": str, "file_name": str, "source": str,
             "license": str, "level": str, "category_en": str,
@@ -57,23 +58,27 @@ class JSONEvaluator:
 
     def validate_entry(self, idx, entry):
         errors = []
+
         for key, expected_type in self.schema.items():
             value = entry.get(key)
             if value is None or (isinstance(value, str) and not value.strip()):
                 errors.append({"entry": idx, "message": f"Missing or empty key '{key}'."})
             elif not isinstance(value, expected_type):
                 errors.append({"entry": idx, "message": f"Invalid type for '{key}': expected {expected_type.__name__}, got {type(value).__name__}."})
-        
+
+
         lang = entry.get('language', '').lower()
-        if lang and not self.is_valid_iso_code(lang):
-            errors.append({"entry": idx, "message": f"Invalid language code: '{lang}'. Must be a valid ISO 639-1 (2-letter)"})
+        if lang != self.language_code:
+            errors.append({"entry": idx, "message": f"Invalid language code: expected '{self.language_code}', got '{lang}'."})
+        elif not self.is_valid_iso_code(lang):
+            errors.append({"entry": idx, "message": f"Invalid language code format: '{lang}'. Must be a valid ISO 639-1 (2-letter) code."})
 
         options = entry.get("options", [])
         if not isinstance(options, list) or any(not isinstance(opt, str) or not opt.strip() for opt in options):
             errors.append({"entry": idx, "message": "Invalid 'options': must be a list of non-empty strings."})
         elif len(set(options)) == 1:
             errors.append({"entry": idx, "message": "All options are identical."})
-        
+
         answer = entry.get("answer", "")
         if not isinstance(answer, str):
             errors.append({"entry": idx, "message": "Invalid 'answer': must be a string."})
@@ -85,7 +90,7 @@ class JSONEvaluator:
                     errors.append({"entry": idx, "message": f"Invalid 'answer': Answer cannot be more than number of options: {len(options)}."})
             except ValueError:
                 errors.append({"entry": idx, "message": "Invalid 'answer': must be comma-separated integers."})
-        
+
         return errors
 
     def validate_all(self):
@@ -93,7 +98,7 @@ class JSONEvaluator:
         all_errors = []
         for idx, entry in enumerate(self.json_data):
             entry_hash = (entry['question'].strip(), tuple(opt.strip() for opt in entry['options']))
-            
+
             if entry_hash in seen_entries:
                 all_errors.append({"entry": idx, "message": f"Duplicate of entry {seen_entries[entry_hash]}."})
             else:
@@ -111,24 +116,24 @@ class JSONEvaluator:
 
     def display_errors_pretty(self, errors):
         console = Console()
-        
+
         for error in errors:
             entry = self.json_data[error["entry"]]
-            
+
             tree = Tree(f"[bold red]Error in Entry {error['entry']}[/bold red]")
             tree.add(Text(error['message'], style="bold yellow"))
-            
+
             question_node = tree.add("Question")
             question_node.add(Syntax(entry.get('question', '[N/A]'), "text", theme="monokai", word_wrap=True))
-            
+
             options_node = tree.add("Options")
             options = entry.get('options', [])
             for i, option in enumerate(options, 1):
                 options_node.add(f"{i}. {option}")
-            
+
             answer_node = tree.add("Answer")
             answer_node.add(str(entry.get('answer', '[N/A]')))
-            
+
             console.print(Panel(tree, expand=False, border_style="red"))
             console.print()
 
@@ -141,7 +146,7 @@ class JSONEvaluator:
                 duplicates.append({"entry": idx, "duplicate_with_entry": seen[key], "message": "Duplicate entry."})
             else:
                 seen[key] = idx
-        
+
         if duplicates:
             self.display_duplicates_pretty(duplicates)
             if self.purge_error_entries:
@@ -150,54 +155,69 @@ class JSONEvaluator:
 
     def display_duplicates_pretty(self, duplicates):
         console = Console()
-        
+
         for duplicate in duplicates:
             original_idx = duplicate["duplicate_with_entry"]
             duplicate_idx = duplicate["entry"]
             original_entry = self.json_data[original_idx]
             duplicate_entry = self.json_data[duplicate_idx]
-            
+
             tree = Tree(f"[bold blue]Duplicate Entry Found[/bold blue]")
-            
+
             original_node = tree.add(f"Original Entry (Index: {original_idx})")
             duplicate_node = tree.add(f"Duplicate Entry (Index: {duplicate_idx})")
-            
+
             for node, entry in [(original_node, original_entry), (duplicate_node, duplicate_entry)]:
                 question_node = node.add("Question")
                 question_node.add(Syntax(entry['question'], "text", theme="monokai", word_wrap=True))
-                
+
                 options_node = node.add("Options")
                 for i, option in enumerate(entry['options'], 1):
                     options_node.add(f"{i}. {option}")
-            
+
             console.print(Panel(tree, expand=False, border_style="blue"))
             console.print()
 
     def clean_entries(self):
-        """Remove keys that are not in the schema from all entries."""
+        """Remove keys that are not in the schema from all entries and remove invalid entries."""
         schema_keys = set(self.schema.keys())
         removed_keys = set()
-        for entry in self.json_data:
+        valid_entries = []
+
+        for idx, entry in enumerate(self.json_data):
             unexpected_keys = set(entry.keys()) - schema_keys
             for key in unexpected_keys:
                 del entry[key]
                 removed_keys.add(key)
-        
+
+            # Check if the entry is valid after removing unexpected keys
+            if all(key in entry and isinstance(entry[key], self.schema[key]) for key in self.schema):
+                valid_entries.append(entry)
+            else:
+                self.console.print(f"[yellow]Removed invalid entry at index {idx}[/yellow]")
+
+        self.json_data = valid_entries
+
         if removed_keys:
-            self.console.print(f"[yellow]Removed unexpected keys from entries: {', '.join(removed_keys)}[/yellow]")    
+            self.console.print(f"[yellow]Removed unexpected keys from entries: {', '.join(removed_keys)}[/yellow]")
+
+        self.save_cleaned_data(name='proper_schema')
 
 
     def remove_problematic_entries(self, errors):
         self.json_data = [entry for idx, entry in enumerate(self.json_data) if idx not in {error['entry'] for error in errors}]
 
-    def save_cleaned_data(self):
+    def save_cleaned_data(self, name='cleaned'):
         base_filename = os.path.basename(self.json_file).split('.')[0]
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        self.output_file = f"cleaned_{base_filename}_{timestamp}.json"
+        self.output_file = f"{name}_{base_filename}_{timestamp}.json"
+    
         with open(self.output_file, 'w', encoding='utf-8') as outfile:
             json.dump(self.json_data, outfile, ensure_ascii=False, indent=4)
-        self.console.print(Panel(f"Step Three: Cleaned data saved to [green]{self.output_file}[/green]", style="bold green"))
 
+        message = f"Cleaned data saved to [green]{self.output_file}[/green]"
+        self.console.print(Panel(message, title=f"Step: {name.capitalize()}", style="bold green"))
+        
     def run_all_checks(self):
         if not self.load_json_file():
             return
@@ -220,7 +240,7 @@ class JSONEvaluator:
     def revalidate_cleaned_data(self):
         self.console.print(Panel("Step Four: Re-validating cleaned JSON data...", style="bold cyan"))
         is_valid = self.validate_all()
-        
+
         if not is_valid:
             self.console.print(Panel("Re-validation failed. Errors found in the cleaned data.", style="bold red"))
         else:
@@ -236,12 +256,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='JSON Evaluator')
     parser.add_argument('--json_file', type=str, help='Path to the JSON file to evaluate', required=True)
     parser.add_argument('--purge_error_entries', action='store_true', help='Remove entries with errors')
+    parser.add_argument('--language_code', type=str, help='Language code for the dataset', required=True)
     args = parser.parse_args()
 
     console = Console()
     console.print(Rule(title="Starting Evaluation!", style="bold green"))
     console.print(f"JSON file: [cyan]{args.json_file}[/cyan]")
     console.print(f"Should entries with errors simply be purged?: [cyan]{args.purge_error_entries}[/cyan]")
-
-    evaluator = JSONEvaluator(json_file=args.json_file, purge_error_entries=args.purge_error_entries)
+    console.print(f"Language code: [cyan]{args.language_code}[/cyan]")
+    evaluator = JSONEvaluator(json_file=args.json_file, purge_error_entries=args.purge_error_entries, language_code=args.language_code)
     evaluator.run_all_checks()
