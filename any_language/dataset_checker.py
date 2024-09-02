@@ -173,6 +173,20 @@ class JSONEvaluator:
             console.print(Panel(tree, expand=False, border_style="blue"))
             console.print()
 
+    def clean_entries(self):
+        """Remove keys that are not in the schema from all entries."""
+        schema_keys = set(self.schema.keys())
+        removed_keys = set()
+        for entry in self.json_data:
+            unexpected_keys = set(entry.keys()) - schema_keys
+            for key in unexpected_keys:
+                del entry[key]
+                removed_keys.add(key)
+        
+        if removed_keys:
+            self.console.print(f"[yellow]Removed unexpected keys from entries: {', '.join(removed_keys)}[/yellow]")    
+
+
     def remove_problematic_entries(self, errors):
         self.json_data = [entry for idx, entry in enumerate(self.json_data) if idx not in {error['entry'] for error in errors}]
 
@@ -188,6 +202,7 @@ class JSONEvaluator:
         if not self.load_json_file():
             return
         self.clean_whitespace()
+        self.clean_entries()
 
         is_valid = self.validate_all()
 
