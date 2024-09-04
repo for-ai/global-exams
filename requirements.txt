@@ -1,0 +1,6 @@
+openai
+cohere
+pdf2image
+pymupdf
+rich
+tqdm
