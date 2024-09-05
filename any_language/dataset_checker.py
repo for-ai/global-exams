@@ -55,8 +55,24 @@ class JSONEvaluator:
         schema_keys = set(self.schema.keys())
         def clean_value(v):
             return v.strip() if isinstance(v, str) else [clean_value(i) for i in v] if isinstance(v, list) else v
-        cleaned_data = [{k: clean_value(v) for k, v in entry.items() if k in schema_keys} for entry in self.json_data]
-        has_changes = any(cleaned != original for cleaned, original in zip(cleaned_data, self.json_data))   
+        
+        cleaned_data = []
+        has_changes = False
+        spurious_fields = set()
+
+        for entry in self.json_data:
+            cleaned_entry = {}
+            for k, v in entry.items():
+                if k in schema_keys:
+                    cleaned_entry[k] = clean_value(v)
+                else:
+                    spurious_fields.add(k)
+                    has_changes = True
+            cleaned_data.append(cleaned_entry)
+
+        if spurious_fields:
+            self.console.print(f"[yellow]Spurious fields found and removed: {', '.join(spurious_fields)}[/yellow]")
+
         if has_changes:
             self.json_data = cleaned_data
         
@@ -64,13 +80,13 @@ class JSONEvaluator:
 
     def validate_all(self):
         all_errors = []
-        seen_entries = {}
+        self.seen_entries = {}  # Changed to instance variable
         for idx, entry in enumerate(self.json_data):
             entry_hash = (entry['question'].strip(), tuple(opt.strip() for opt in entry['options']))
-            if entry_hash in seen_entries:
-                all_errors.append({"entry": idx, "message": f"Duplicate of entry {seen_entries[entry_hash]}."})
+            if entry_hash in self.seen_entries:
+                all_errors.append({"entry": idx, "message": f"Duplicate of entry {self.seen_entries[entry_hash]}."})
             else:
-                seen_entries[entry_hash] = idx
+                self.seen_entries[entry_hash] = idx
             all_errors.extend(self.validate_entry(idx, entry))
 
         if all_errors:
@@ -141,6 +157,7 @@ class JSONEvaluator:
 
         has_changes = self.clean_data()
         if has_changes:
+            self.console.print("[yellow]Spurious fields were found and removed.[/yellow]")
             self.save_cleaned_data('cleaned_no_spurious_fields')
         
         is_valid = self.validate_all()
@@ -152,7 +169,14 @@ class JSONEvaluator:
         self.report_results(is_valid, has_changes)
 
     def remove_problematic_entries(self):
-        self.json_data = [entry for idx, entry in enumerate(self.json_data) if not self.validate_entry(idx, entry)]
+        valid_entries = []
+        seen_entries = set()
+        for idx, entry in enumerate(self.json_data):
+            entry_hash = (entry['question'].strip(), tuple(opt.strip() for opt in entry['options']))
+            if entry_hash not in seen_entries and not self.validate_entry(idx, entry):
+                valid_entries.append(entry)
+                seen_entries.add(entry_hash)
+        self.json_data = valid_entries
 
     def report_results(self, is_valid, has_changes):
         if is_valid and not has_changes:
