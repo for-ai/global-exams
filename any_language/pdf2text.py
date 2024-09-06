@@ -69,11 +69,13 @@ def main(dir_path):
 
         # save file
         data = pd.DataFrame(extracted_text)
-        output_file = "{}.csv".format(f.split(".")[0])
-        data.to_csv(os.path.join(dir_path, "parsed", output_file), index=False)
-        print("Data saved: {}".format(output_file))
+        output_file = '{}.csv'.format(f.split('.')[0])
+        parsed_path = os.path.join(dir_path, 'parsed')
+        if not os.path.isdir(parsed_path):
+            os.makedirs(parsed_path)
+        data.to_csv(os.path.join(parsed_path, output_file), index=False)
+        print('Data saved: {}'.format(output_file))
         print("-" * 40)
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
