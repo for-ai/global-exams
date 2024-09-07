@@ -1,14 +1,5 @@
 ### Cohere For AI Community, Sree Harsha Nelaturu, 2024 (+ Cursor^TM)
 
-"""
-This script ideally should check for any issues with schema, to ensure all the fields needed are present -- (basically like the doc said)
-- Should ensure options are non-empty and answer is in the range of 1, len(options)
-- This script will also remove questions + options combos that are exactly the same word-for-word (some might slip through the crack due to semantic changes, but what can ya do)
-- Should also break if answer ain't an int (this can change if not required, lmk)
-- purge_error_entries removes duplicates, removes the error'd entries and saves a new JSON -- if you don't provide it, then you gotta fix stuff manually and then re-run
-- If you have suggestions/want to to improve this, send me a message on discord.
-"""
-
 import json
 import os
 from datetime import datetime
@@ -60,13 +51,13 @@ class JSONEvaluator:
         has_changes = False
         spurious_fields = set()
 
-        for entry in self.json_data:
+        for num, entry in enumerate(self.json_data):
             cleaned_entry = {}
             for k, v in entry.items():
                 if k in schema_keys:
                     cleaned_entry[k] = clean_value(v)
                 else:
-                    spurious_fields.add(k)
+                    spurious_fields.add(', '.join(map(str, (num, k))))
                     has_changes = True
             cleaned_data.append(cleaned_entry)
 
